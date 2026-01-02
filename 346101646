@@ -1,0 +1,42 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Disable4 = not (replicatesignal and type(replicatesignal) == "function")
+
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://4590657391"
+sound.Volume = 2.5
+sound.Parent = game:GetService("SoundService")
+sound:Play()
+
+Library:Notify("正在加载 data network",5)
+Library:Notify("加入QQ群114514",5)
+
+Library.ForceCheckbox = true
+
+Window = Library:CreateWindow({
+    Title = 'Sapphire',
+    Footer = "QQ群114514 丨 作者 星",
+    Center = true,
+    NotifySide = "Right",
+    AutoShow = true
+})
+
+
+
+Tabs = {
+	
+    Player     = Window:AddTab("玩家"),
+	Exploits       = Window:AddTab('反作弊设置'),
+	Visuals       = Window:AddTab('视觉效果'),
+	Floor     = Window:AddTab('楼层'),
+    Fun     = Window:AddTab('娱乐'),
+	UISettings = Window:AddTab("ui设置"),
+    Addons = Window:AddTab('模组'),
+
+}

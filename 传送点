@@ -1,0 +1,313 @@
+-- Delta 多传送点脚本 v3 - 简化稳定版
+-- 使用简单输入方式
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- ========== 数据存储 ==========
+local teleportPoints = {}
+
+-- ========== 简单输入框（使用聊天框方式）==========
+local function getInputFromChat(defaultName, callback)
+    -- 创建临时提示
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 120)
+    frame.Position = UDim2.new(0.5, -150, 0.4, -60)
+    frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.15)
+    frame.BorderSizePixel = 0
+    frame.Parent = playerGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = frame
+    
+    -- 标题
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 35)
+    title.BackgroundTransparency = 1
+    title.Text = "📝 输入传送点名称"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextSize = 16
+    title.Font = Enum.Font.GothamBold
+    title.Parent = frame
+    
+    -- 输入框
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(0.9, 0, 0, 40)
+    input.Position = UDim2.new(0.05, 0, 0.35, 0)
+    input.BackgroundColor3 = Color3.new(0.2, 0.2, 0.3)
+    input.Text = defaultName
+    input.TextColor3 = Color3.new(1, 1, 1)
+    input.PlaceholderText = "输入名称..."
+    input.Font = Enum.Font.Gotham
+    input.TextSize = 14
+    input.Parent = frame
+    
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 8)
+    inputCorner.Parent = input
+    
+    -- 按钮栏
+    local btnBar = Instance.new("Frame")
+    btnBar.Size = UDim2.new(1, 0, 0, 40)
+    btnBar.Position = UDim2.new(0, 0, 1, -40)
+    btnBar.BackgroundTransparency = 1
+    btnBar.Parent = frame
+    
+    -- 确认按钮
+    local okBtn = Instance.new("TextButton")
+    okBtn.Size = UDim2.new(0.45, -5, 1, -5)
+    okBtn.Position = UDim2.new(0.05, 0, 0, 0)
+    okBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.3)
+    okBtn.Text = "✓ 确认"
+    okBtn.TextColor3 = Color3.new(1, 1, 1)
+    okBtn.TextSize = 14
+    okBtn.Font = Enum.Font.GothamBold
+    okBtn.BorderSizePixel = 0
+    okBtn.Parent = btnBar
+    
+    local okCorner = Instance.new("UICorner")
+    okCorner.CornerRadius = UDim.new(0, 8)
+    okCorner.Parent = okBtn
+    
+    -- 取消按钮
+    local cancelBtn = Instance.new("TextButton")
+    cancelBtn.Size = UDim2.new(0.45, -5, 1, -5)
+    cancelBtn.Position = UDim2.new(0.55, 0, 0, 0)
+    cancelBtn.BackgroundColor3 = Color3.new(0.6, 0.3, 0.3)
+    cancelBtn.Text = "✕ 取消"
+    cancelBtn.TextColor3 = Color3.new(1, 1, 1)
+    cancelBtn.TextSize = 14
+    cancelBtn.Font = Enum.Font.GothamBold
+    cancelBtn.BorderSizePixel = 0
+    cancelBtn.Parent = btnBar
+    
+    local cancelCorner = Instance.new("UICorner")
+    cancelCorner.CornerRadius = UDim.new(0, 8)
+    cancelCorner.Parent = cancelBtn
+    
+    -- 确认回调
+    local function confirm()
+        local name = input.Text
+        if name == "" then
+            name = defaultName
+        end
+        frame:Destroy()
+        if callback then
+            callback(name)
+        end
+    end
+    
+    okBtn.MouseButton1Click:Connect(confirm)
+    cancelBtn.MouseButton1Click:Connect(function()
+        frame:Destroy()
+    end)
+    
+    -- 回车确认
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            confirm()
+        end
+    end)
+    
+    -- 自动聚焦
+    task.wait(0.1)
+    input:CaptureFocus()
+end
+
+-- ========== 创建UI ==========
+local function createUI()
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+    
+    -- 删除旧UI
+    local oldGui = playerGui:FindFirstChild("MultiTPGUI")
+    if oldGui then oldGui:Destroy() end
+    
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "MultiTPGUI"
+    gui.ResetOnSpawn = false
+    gui.Parent = playerGui
+    
+    -- 主按钮
+    local mainBtn = Instance.new("TextButton")
+    mainBtn.Size = UDim2.new(0, 70, 0, 70)
+    mainBtn.Position = UDim2.new(0.85, -35, 0.8, -35)
+    mainBtn.BackgroundColor3 = Color3.new(0.2, 0.4, 0.8)
+    mainBtn.BackgroundTransparency = 0.2
+    mainBtn.Text = "📌"
+    mainBtn.TextSize = 35
+    mainBtn.TextColor3 = Color3.new(1, 1, 1)
+    mainBtn.Font = Enum.Font.GothamBold
+    mainBtn.BorderSizePixel = 0
+    mainBtn.Parent = gui
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(1, 0)
+    mainCorner.Parent = mainBtn
+    
+    -- 数量角标
+    local badge = Instance.new("TextLabel")
+    badge.Size = UDim2.new(0, 22, 0, 22)
+    badge.Position = UDim2.new(0.7, 0, 0, -2)
+    badge.BackgroundColor3 = Color3.new(0.5, 0.5, 0.5)
+    badge.BackgroundTransparency = 0
+    badge.Text = "0"
+    badge.TextColor3 = Color3.new(1, 1, 1)
+    badge.TextSize = 12
+    badge.Font = Enum.Font.GothamBold
+    badge.BorderSizePixel = 0
+    badge.Parent = mainBtn
+    
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(1, 0)
+    badgeCorner.Parent = badge
+    
+    -- 菜单面板
+    local menu = Instance.new("Frame")
+    menu.Size = UDim2.new(0, 260, 0, 0)
+    menu.Position = UDim2.new(0.85, -280, 0.5, -150)
+    menu.BackgroundColor3 = Color3.new(0.08, 0.08, 0.12)
+    menu.BackgroundTransparency = 0.05
+    menu.BorderSizePixel = 0
+    menu.Visible = false
+    menu.Parent = gui
+    
+    local menuCorner = Instance.new("UICorner")
+    menuCorner.CornerRadius = UDim.new(0, 12)
+    menuCorner.Parent = menu
+    
+    -- 标题栏
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Color3.new(0.2, 0.3, 0.5)
+    titleBar.BackgroundTransparency = 0.2
+    titleBar.Parent = menu
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 12)
+    titleCorner.Parent = titleBar
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Size = UDim2.new(0.7, 0, 1, 0)
+    titleText.Position = UDim2.new(0.05, 0, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "📌 传送点列表"
+    titleText.TextColor3 = Color3.new(1, 1, 1)
+    titleText.TextSize = 14
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Font = Enum.Font.GothamBold
+    titleText.Parent = titleBar
+    
+    -- 关闭按钮
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 28, 0, 28)
+    closeBtn.Position = UDim2.new(1, -35, 0.5, -14)
+    closeBtn.BackgroundColor3 = Color3.new(1, 0.4, 0.4)
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    closeBtn.TextSize = 16
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Parent = titleBar
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(1, 0)
+    closeCorner.Parent = closeBtn
+    
+    -- 滚动列表
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, 0, 0, 220)
+    scroll.Position = UDim2.new(0, 0, 0, 40)
+    scroll.BackgroundTransparency = 1
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.ScrollBarThickness = 4
+    scroll.Parent = menu
+    
+    -- 底部按钮
+    local bottom = Instance.new("Frame")
+    bottom.Size = UDim2.new(1, 0, 0, 50)
+    bottom.Position = UDim2.new(0, 0, 1, -50)
+    bottom.BackgroundColor3 = Color3.new(0.1, 0.1, 0.15)
+    bottom.BackgroundTransparency = 0.1
+    bottom.Parent = menu
+    
+    local saveBtn = Instance.new("TextButton")
+    saveBtn.Size = UDim2.new(0.45, -5, 0.7, 0)
+    saveBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
+    saveBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.3)
+    saveBtn.Text = "+ 保存当前位置"
+    saveBtn.TextColor3 = Color3.new(1, 1, 1)
+    saveBtn.TextSize = 12
+    saveBtn.BorderSizePixel = 0
+    saveBtn.Parent = bottom
+    
+    local saveCorner = Instance.new("UICorner")
+    saveCorner.CornerRadius = UDim.new(0, 6)
+    saveCorner.Parent = saveBtn
+    
+    local clearBtn = Instance.new("TextButton")
+    clearBtn.Size = UDim2.new(0.45, -5, 0.7, 0)
+    clearBtn.Position = UDim2.new(0.55, 0, 0.15, 0)
+    clearBtn.BackgroundColor3 = Color3.new(0.8, 0.3, 0.3)
+    clearBtn.Text = "清空全部"
+    clearBtn.TextColor3 = Color3.new(1, 1, 1)
+    clearBtn.TextSize = 12
+    clearBtn.BorderSizePixel = 0
+    clearBtn.Parent = bottom
+    
+    local clearCorner = Instance.new("UICorner")
+    clearCorner.CornerRadius = UDim.new(0, 6)
+    clearCorner.Parent = clearBtn
+    
+    return gui, mainBtn, menu, scroll, badge, saveBtn, clearBtn, closeBtn
+end
+
+-- ========== 更新列表 ==========
+local function updateList(scroll, badge)
+    -- 清空
+    for _, child in ipairs(scroll:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    badge.Text = tostring(#teleportPoints)
+    badge.BackgroundColor3 = #teleportPoints > 0 and Color3.new(0.2, 0.7, 0.2) or Color3.new(0.5, 0.5, 0.5)
+    
+    if #teleportPoints == 0 then
+        local empty = Instance.new("TextLabel")
+        empty.Size = UDim2.new(1, -10, 0, 50)
+        empty.Position = UDim2.new(0, 5, 0, 10)
+        empty.BackgroundTransparency = 1
+        empty.Text = "暂无传送点\n点击「保存当前位置」添加"
+        empty.TextColor3 = Color3.new(0.6, 0.6, 0.6)
+        empty.TextSize = 12
+        empty.TextWrapped = true
+        empty.Parent = scroll
+        scroll.CanvasSize = UDim2.new(0, 0, 0, 70)
+        return
+    end
+    
+    local height = 0
+    for i, point in ipairs(teleportPoints) do
+        local item = Instance.new("TextButton")
+        item.Size = UDim2.new(1, -10, 0, 55)
+        item.Position = UDim2.new(0, 5, 0, height)
+        item.BackgroundColor3 = Color3.new(0.18, 0.18, 0.25)
+        item.BackgroundTransparency = 0.2
+        item.Text = ""
+        item.BorderSizePixel = 0
+        item.Parent = scroll
+        
+        local itemCorner = Instance.new("UICorner")
+        itemCorner.CornerRadius = UDim.new(0, 8)
+        itemCorner.Parent = item
+        
+        -- 名称
+        local name = Instance.new("TextLabel")
+        name.Size = UDim2.new(0.6, -40, 0.5, 0)
+        name.Position = UDim2.new(0, 10, 0, 5)
+        name.BackgroundTransparency = 1
+        name.Text = point.name
+        name.TextColor3 = Color3.new
